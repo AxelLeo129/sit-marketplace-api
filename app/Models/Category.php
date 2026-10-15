@@ -3,24 +3,28 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['name', 'slug', 'parent_id'])]
+/**
+ * Área terapéutica. Agrupa productos y sirve como especialidad de los médicos.
+ */
+#[Fillable(['name'])]
 class Category extends Model
 {
-    public function parent(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    use HasFactory;
+
+    public function products(): BelongsToMany
     {
-        return $this->belongsTo(Category::class, 'parent_id');
+        return $this->belongsToMany(Product::class);
     }
 
-    public function children(): HasMany
+    /**
+     * Médicos que tienen esta especialidad.
+     */
+    public function doctors(): BelongsToMany
     {
-        return $this->hasMany(Category::class, 'parent_id');
-    }
-
-    public function products(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
-    {
-        return $this->belongsToMany(Product::class, 'product_categories');
+        return $this->belongsToMany(User::class);
     }
 }

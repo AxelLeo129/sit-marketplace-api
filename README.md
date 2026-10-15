@@ -1,3 +1,25 @@
+# SIT Marketplace API
+
+API para la gestión de recetas médicas y la venta y entrega de medicamentos.
+
+**Flujo principal:** el médico emite una receta → el call-center llama al paciente y crea el pedido → facturación lo factura → el despachador asigna un mensajero → el mensajero lo entrega. Cada línea vendida genera comisiones para el médico, el visitador, el call-center y el mensajero.
+
+| Rol (`App\Enums\Role`) | Qué hace |
+|---|---|
+| `admin` | Administra usuarios, catálogo y reportes |
+| `doctor` | Emite recetas a sus pacientes |
+| `sales_rep` (visitador) | Da seguimiento a sus médicos asignados |
+| `call_center` | Convierte recetas en pedidos y reagenda llamadas |
+| `billing` | Factura los pedidos |
+| `dispatcher` | Asigna los pedidos facturados a mensajeros |
+| `courier` | Entrega los pedidos |
+
+Las tasas de IVA, tarjeta y comisiones están en `config/marketplace.php`. El cálculo se hace solo en el backend (`App\Services\SaleCalculator`).
+
+No hay registro público: los usuarios los crea un administrador.
+
+---
+
 ### 👨‍💻 Colaboradores
 
 <table>
@@ -56,6 +78,8 @@ Sigue estos pasos para configurar el proyecto localmente:
     DB_HOST=127.0.0.1
     DB_PORT=3306
     DB_DATABASE=sit_marketplace
+    ADMIN_EMAIL=tu-correo@ejemplo.com
+    ADMIN_PASSWORD=una-contraseña-segura
     DB_USERNAME=root
     DB_PASSWORD=
     ```
@@ -64,6 +88,12 @@ Sigue estos pasos para configurar el proyecto localmente:
     ```bash
     mysql -u root -e "CREATE DATABASE sit_marketplace CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
     php artisan migrate --seed
+    ```
+    En entorno local también se cargan datos demo: un usuario por rol (`<rol>@demo.test`, contraseña `password`).
+
+    Para correr los tests:
+    ```bash
+    php artisan test
     ```
 
 ---

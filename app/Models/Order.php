@@ -2,32 +2,80 @@
 
 namespace App\Models;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['user_id', 'address_id', 'status', 'total', 'notes'])]
+/**
+ * Pedido de medicamentos: lo crea el call-center, lo factura facturación,
+ * lo asigna el despachador y lo entrega el mensajero.
+ */
+#[Fillable([
+    'prescription_id', 'customer_id', 'billing_address_id', 'shipping_address_id', 'created_by', 'status',
+    'payment_method', 'payment_reference', 'cardholder_name', 'card_last_four',
+    'vat_rate', 'card_fee_rate', 'total',
+    'invoice_tax_id', 'invoice_number', 'invoiced_at', 'invoiced_by',
+    'courier_id', 'assigned_at', 'dispatched_at', 'delivered_at', 'received_by', 'delivery_notes',
+])]
 class Order extends Model
 {
+    use HasFactory;
+
     protected function casts(): array
     {
         return [
+            'status' => OrderStatus::class,
+            'payment_method' => PaymentMethod::class,
+            'vat_rate' => 'decimal:2',
+            'card_fee_rate' => 'decimal:2',
             'total' => 'decimal:2',
-            'confirmed_at' => 'datetime',
-            'shipped_at' => 'datetime',
+            'invoiced_at' => 'datetime',
+            'assigned_at' => 'datetime',
+            'dispatched_at' => 'datetime',
             'delivered_at' => 'datetime',
         ];
     }
 
-    public function user(): BelongsTo
+    public function prescription(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Prescription::class);
     }
 
-    public function address(): BelongsTo
+    public function customer(): BelongsTo
     {
-        return $this->belongsTo(Address::class);
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function billingAddress(): BelongsTo
+    {
+        return $this->belongsTo(CustomerAddress::class, 'billing_address_id');
+    }
+
+    public function shippingAddress(): BelongsTo
+    {
+        return $this->belongsTo(CustomerAddress::class, 'shipping_address_id');
+    }
+
+    /**
+     * Agente de call-center que creó el pedido.
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function invoicer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'invoiced_by');
+    }
+
+    public function courier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'courier_id');
     }
 
     public function items(): HasMany

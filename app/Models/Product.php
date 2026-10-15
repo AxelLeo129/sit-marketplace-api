@@ -3,38 +3,43 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['store_id', 'name', 'slug', 'description', 'price', 'stock', 'is_active'])]
+/**
+ * Medicamento del catálogo.
+ */
+#[Fillable(['name', 'description', 'presentation_id', 'lab_id', 'price', 'cost', 'stock', 'warehouse', 'is_active', 'is_regulated', 'observations', 'image_path'])]
 class Product extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected function casts(): array
     {
         return [
             'price' => 'decimal:2',
+            'cost' => 'decimal:2',
             'stock' => 'integer',
             'is_active' => 'boolean',
+            'is_regulated' => 'boolean',
         ];
     }
 
-    public function store(): BelongsTo
+    public function presentation(): BelongsTo
     {
-        return $this->belongsTo(Store::class);
+        return $this->belongsTo(Presentation::class);
     }
 
-    public function images(): HasMany
+    public function lab(): BelongsTo
     {
-        return $this->hasMany(ProductImage::class)->orderBy('sort_order');
+        return $this->belongsTo(Lab::class);
     }
 
     public function categories(): BelongsToMany
     {
-        return $this->belongsToMany(Category::class, 'product_categories');
+        return $this->belongsToMany(Category::class);
     }
 }

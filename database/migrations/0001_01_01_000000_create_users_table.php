@@ -7,26 +7,27 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Crea usuarios, tokens de recuperación de contraseña y sesiones.
      */
     public function up(): void
     {
-        Schema::create('roles', function (Blueprint $table) {
-            $table->id();
-            $table->string('name', 50)->unique();
-            $table->timestamps();
-        });
-
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            // Número de colegiado: los médicos también pueden iniciar sesión con él.
+            $table->string('collegiate_number', 30)->nullable()->unique();
             $table->string('phone', 20)->nullable();
             $table->date('birth_date')->nullable();
-            $table->string('avatar_url')->nullable();
-            $table->foreignId('role_id')->constrained();
+            // Ruta del objeto en Firebase Storage, no la URL pública.
+            $table->string('avatar_path')->nullable();
+            // Valores de App\Enums\Role.
+            $table->string('role', 30)->index();
+            // Visitador médico responsable de este médico.
+            $table->foreignId('sales_rep_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->boolean('is_active')->default(true);
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
             $table->rememberToken();
             $table->softDeletes();
             $table->timestamps();
@@ -49,13 +50,12 @@ return new class extends Migration
     }
 
     /**
-     * Reverse the migrations.
+     * Revierte la migración.
      */
     public function down(): void
     {
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('users');
-        Schema::dropIfExists('roles');
     }
 };

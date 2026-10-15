@@ -3,59 +3,59 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
-use App\Http\Requests\RegisterRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * Autenticación por token (Sanctum).
+ *
+ * No hay registro público: los usuarios los crea un administrador. En el
+ * sistema anterior el registro aceptaba el rol desde la petición y cualquiera
+ * podía crearse una cuenta de administrador.
+ */
 class AuthController extends Controller
 {
-    public function register(RegisterRequest $request): JsonResponse
-    {
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => $request->password,
-            'phone' => $request->phone,
-            'role_id' => $request->role_id,
-        ]);
-
-        $token = $user->createToken('auth-token')->plainTextToken;
-
-        return response()->json([
-            'user' => $user->load('role'),
-            'token' => $token,
-        ], 201);
-    }
-
+    /**
+     * Inicia sesión con correo o número de colegiado y devuelve un token.
+     */
     public function login(LoginRequest $request): JsonResponse
     {
-        $user = User::where('email', $request->email)->first();
+        $login = $request->validated('login');
+        $column = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'collegiate_number';
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'message' => 'Invalid credentials.',
-            ], 401);
+        $user = User::where($column, $login)->first();
+
+        // Mismo mensaje en todos los casos para no revelar qué cuentas existen.
+        if (! $user || ! $user->is_active || ! Hash::check($request->validated('password'), $user->password)) {
+            return response()->json(['message' => 'Credenciales inválidas.'], 401);
         }
 
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
-            'user' => $user->load('role'),
+            'user' => new UserResource($user),
             'token' => $token,
         ]);
     }
 
-    public function me(Request $request): JsonResponse
+    /**
+     * Devuelve el usuario autenticado.
+     */
+    public function me(Request $request): UserResource
     {
-        return response()->json($request->user()->load('role'));
+        return new UserResource($request->user()->load('doctorProfile'));
     }
 
+    /**
+     * Revoca el token usado en la petición.
+     */
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Logged out.']);
+        return response()->json(['message' => 'Sesión cerrada.']);
     }
 }
