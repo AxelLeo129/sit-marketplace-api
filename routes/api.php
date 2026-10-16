@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LabController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\PresentationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductImageController;
@@ -30,6 +31,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Usuarios: administrador y visitador (permisos en UserPolicy).
     Route::apiResource('users', UserController::class);
+
+    // Recetas: el médico las emite, el call-center las gestiona (permisos en PrescriptionPolicy).
+    Route::apiResource('prescriptions', PrescriptionController::class)->except('destroy');
+    Route::post('/prescriptions/{prescription}/reschedule', [PrescriptionController::class, 'reschedule']);
+    Route::post('/prescriptions/{prescription}/cancel', [PrescriptionController::class, 'cancel']);
+    Route::post('/prescriptions/{prescription}/send', [PrescriptionController::class, 'send'])->middleware('throttle:5,1');
 
     // Catálogo: todos los usuarios lo consultan, solo el administrador lo modifica.
     Route::apiResource('categories', CategoryController::class)->only(['index', 'show']);

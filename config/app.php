@@ -68,7 +68,8 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // Guatemala (UTC-6). Con UTC, lo emitido después de las 18:00 quedaba con la fecha del día siguiente.
+    'timezone' => env('APP_TIMEZONE', 'America/Guatemala'),
 
     /*
     |--------------------------------------------------------------------------

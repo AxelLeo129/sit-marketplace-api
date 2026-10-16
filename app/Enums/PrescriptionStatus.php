@@ -23,6 +23,15 @@ enum PrescriptionStatus: string
     case Cancelled = 'cancelled';
 
     /**
+     * Indica si la receta sigue abierta: el médico puede editarla y el
+     * call-center puede reagendarla, cancelarla o convertirla en pedido.
+     */
+    public function isOpen(): bool
+    {
+        return $this === self::Pending || $this === self::Rescheduled;
+    }
+
+    /**
      * Nombre legible del estado.
      */
     public function label(): string

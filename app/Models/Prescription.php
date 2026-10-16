@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Enums\PrescriptionStatus;
+use App\Enums\Role;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +29,21 @@ class Prescription extends Model
             'status' => PrescriptionStatus::class,
             'callback_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Recetas que el usuario puede ver:
+     * el administrador todas, el médico las suyas y el call-center
+     * las que el paciente autorizó que le llamen.
+     */
+    public function scopeVisibleTo(Builder $query, User $user): void
+    {
+        match ($user->role) {
+            Role::Admin => null,
+            Role::Doctor => $query->where('doctor_id', $user->id),
+            Role::CallCenter => $query->where('allows_call_center', true),
+            default => $query->whereRaw('1 = 0'),
+        };
     }
 
     public function doctor(): BelongsTo

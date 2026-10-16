@@ -132,6 +132,13 @@ Todas las rutas llevan el prefijo `/api`. Salvo las públicas, requieren el head
 | POST | `/me/avatar` | Autenticado | Sube la foto de perfil |
 | POST | `/me/clinic-logo` | Médico | Sube el logo de la clínica |
 | CRUD | `/users` | Admin, visitador | El visitador solo ve y crea sus médicos |
+| GET | `/prescriptions` | Admin, médico, call-center | Recetas visibles para el rol. Filtros: `status`, `search`, `issued_from`, `issued_to` |
+| POST | `/prescriptions` | Médico | Emite una receta (fecha de hoy, hora de Guatemala) |
+| GET | `/prescriptions/{id}` | Admin, médico autor, call-center | Diagnóstico y síntomas solo los ve el médico autor |
+| PUT | `/prescriptions/{id}` | Médico autor | Edita mientras siga abierta (nueva o reagendada) |
+| POST | `/prescriptions/{id}/reschedule` | Call-center, admin | Agenda otra llamada (`callback_at`) |
+| POST | `/prescriptions/{id}/cancel` | Call-center, admin | Cancela la receta |
+| POST | `/prescriptions/{id}/send` | Médico autor | Envía la receta al correo del paciente |
 | GET | `/categories`, `/labs`, `/presentations`, `/products` | Autenticado | Consulta del catálogo |
 | POST, PUT, DELETE | `/categories`, `/labs`, `/presentations`, `/products` | Admin | Administración del catálogo |
 | POST, DELETE | `/products/{id}/image` | Admin | Sube o quita la imagen del producto |
