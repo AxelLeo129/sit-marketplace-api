@@ -1,0 +1,60 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\Rules\Password as PasswordRule;
+
+/**
+ * Recuperación de contraseña por correo.
+ *
+ * El sistema anterior generaba una contraseña de 6 caracteres y la enviaba
+ * en texto plano por correo. Ahora se envía un enlace de un solo uso que
+ * expira, y el usuario elige su nueva contraseña.
+ */
+class PasswordResetController extends Controller
+{
+    /**
+     * Envía el enlace de recuperación. Responde lo mismo exista o no el correo,
+     * para no revelar qué cuentas existen.
+     */
+    public function sendLink(Request $request): JsonResponse
+    {
+        $request->validate(['email' => ['required', 'email']]);
+
+        Password::sendResetLink($request->only('email'));
+
+        return response()->json([
+            'message' => 'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.',
+        ]);
+    }
+
+    /**
+     * Cambia la contraseña con el token del enlace y cierra todas las sesiones del usuario.
+     */
+    public function reset(Request $request): JsonResponse
+    {
+        $request->validate([
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string', 'confirmed', PasswordRule::defaults()],
+        ]);
+
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function (User $user, string $password) {
+                $user->update(['password' => $password]);
+                $user->tokens()->delete();
+            },
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            return response()->json(['message' => 'El enlace no es válido o ya expiró.'], 422);
+        }
+
+        return response()->json(['message' => 'Contraseña restablecida. Ya puedes iniciar sesión.']);
+    }
+}

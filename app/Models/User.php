@@ -46,6 +46,24 @@ class User extends Authenticatable
     }
 
     /**
+     * Guarda el perfil de clínica y las especialidades de un médico.
+     * Un valor null deja ese dato como está.
+     *
+     * @param  array<string, mixed>|null  $profile
+     * @param  array<int, int>|null  $specialtyIds
+     */
+    public function saveDoctorData(?array $profile, ?array $specialtyIds): void
+    {
+        if ($profile !== null) {
+            $this->doctorProfile()->updateOrCreate([], $profile);
+        }
+
+        if ($specialtyIds !== null) {
+            $this->specialties()->sync($specialtyIds);
+        }
+    }
+
+    /**
      * Datos de clínica (solo médicos).
      */
     public function doctorProfile(): HasOne

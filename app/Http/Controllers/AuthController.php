@@ -42,14 +42,6 @@ class AuthController extends Controller
     }
 
     /**
-     * Devuelve el usuario autenticado.
-     */
-    public function me(Request $request): UserResource
-    {
-        return new UserResource($request->user()->load('doctorProfile'));
-    }
-
-    /**
      * Revoca el token usado en la petición.
      */
     public function logout(Request $request): JsonResponse

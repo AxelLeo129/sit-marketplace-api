@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\User;
+use App\Services\ImageStorage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,12 +23,15 @@ class UserResource extends JsonResource
             'collegiate_number' => $this->collegiate_number,
             'phone' => $this->phone,
             'birth_date' => $this->birth_date?->toDateString(),
-            'avatar_path' => $this->avatar_path,
+            'avatar_url' => app(ImageStorage::class)->url($this->avatar_path),
             'role' => $this->role->value,
             'role_label' => $this->role->label(),
-            'sales_rep_id' => $this->sales_rep_id,
             'is_active' => $this->is_active,
-            'doctor_profile' => $this->whenLoaded('doctorProfile'),
+            'sales_rep' => $this->whenLoaded('salesRep', fn () => $this->salesRep
+                ? ['id' => $this->salesRep->id, 'name' => $this->salesRep->name]
+                : null),
+            'doctor_profile' => new DoctorProfileResource($this->whenLoaded('doctorProfile')),
+            'specialties' => CategoryResource::collection($this->whenLoaded('specialties')),
             'created_at' => $this->created_at,
         ];
     }
