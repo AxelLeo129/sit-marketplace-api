@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Enums\Role;
 use App\Models\Category;
+use App\Models\Customer;
+use App\Models\CustomerAddress;
 use App\Models\DoctorProfile;
 use App\Models\Lab;
 use App\Models\Prescription;
@@ -57,6 +59,11 @@ class DemoSeeder extends Seeder
                 ->for($prescription)
                 ->recycle($products)
                 ->create());
+
+        // Cliente con dirección de facturación y de entrega, listo para crear pedidos.
+        $customer = Customer::factory()->create(['name' => 'Cliente Demo', 'phone' => '55550000']);
+        CustomerAddress::factory()->billing()->for($customer)->create();
+        CustomerAddress::factory()->for($customer)->create();
     }
 
     /**

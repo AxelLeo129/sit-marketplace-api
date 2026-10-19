@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -12,6 +13,7 @@ use Illuminate\Http\Response;
 /**
  * Categorías (áreas terapéuticas) del catálogo.
  */
+#[Group('Catálogo', weight: 4)]
 class CategoryController extends Controller
 {
     /**

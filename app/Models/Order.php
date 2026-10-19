@@ -4,11 +4,14 @@ namespace App\Models;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
+use App\Enums\Role;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 /**
  * Pedido de medicamentos: lo crea el call-center, lo factura facturación,
@@ -38,6 +41,21 @@ class Order extends Model
             'dispatched_at' => 'datetime',
             'delivered_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Pedidos que el usuario puede ver:
+     * administrador, call-center y facturación todos; el despachador los
+     * ya facturados; el mensajero solo los que tiene asignados.
+     */
+    public function scopeVisibleTo(Builder $query, User $user): void
+    {
+        match ($user->role) {
+            Role::Admin, Role::CallCenter, Role::Billing => null,
+            Role::Dispatcher => $query->whereNot('status', OrderStatus::PendingInvoice),
+            Role::Courier => $query->where('courier_id', $user->id),
+            default => $query->whereRaw('1 = 0'),
+        };
     }
 
     public function prescription(): BelongsTo
@@ -81,5 +99,10 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function commissions(): HasManyThrough
+    {
+        return $this->hasManyThrough(Commission::class, OrderItem::class);
     }
 }

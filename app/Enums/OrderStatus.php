@@ -29,6 +29,14 @@ enum OrderStatus: string
     case Cancelled = 'cancelled';
 
     /**
+     * Un pedido se puede cancelar mientras no se haya asignado a un mensajero.
+     */
+    public function isCancellable(): bool
+    {
+        return $this === self::PendingInvoice || $this === self::Invoiced;
+    }
+
+    /**
      * Nombre legible del estado.
      */
     public function label(): string

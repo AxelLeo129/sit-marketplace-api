@@ -28,7 +28,8 @@ class UpdateProfileRequest extends FormRequest
             'email' => ['sometimes', 'required', 'email', 'max:255', Rule::unique('users')->ignore($user)],
             'phone' => ['nullable', 'string', 'max:20'],
             'birth_date' => ['nullable', 'date', 'before:today'],
-            ...$this->doctorDataRules($user->hasRole(Role::Doctor)),
+            // Sin usuario (p. ej. al generar la documentación) se muestran las reglas de un médico.
+            ...$this->doctorDataRules($user?->hasRole(Role::Doctor) ?? true),
         ];
     }
 }

@@ -6,10 +6,12 @@ use App\Http\Requests\ImageRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Services\ImageStorage;
+use Dedoc\Scramble\Attributes\Group;
 
 /**
  * Imagen de un producto.
  */
+#[Group('Catálogo', weight: 4)]
 class ProductImageController extends Controller
 {
     public function __construct(private readonly ImageStorage $images) {}

@@ -8,6 +8,7 @@ use App\Http\Requests\ReschedulePrescriptionRequest;
 use App\Http\Resources\PrescriptionResource;
 use App\Mail\PrescriptionMail;
 use App\Models\Prescription;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -20,6 +21,7 @@ use Illuminate\Validation\Rule;
  * Recetas: el médico las emite y el call-center las gestiona.
  * Los permisos están en App\Policies\PrescriptionPolicy.
  */
+#[Group('Recetas', weight: 5)]
 class PrescriptionController extends Controller
 {
     private const RELATIONS = ['doctor.doctorProfile', 'items.product.presentation'];

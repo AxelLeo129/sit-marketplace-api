@@ -7,6 +7,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -19,6 +20,7 @@ use Illuminate\Validation\Rule;
  * Administración de usuarios (administrador) y de médicos (visitador).
  * Los permisos están en App\Policies\UserPolicy.
  */
+#[Group('Usuarios', weight: 3)]
 class UserController extends Controller
 {
     private const RELATIONS = ['salesRep', 'doctorProfile', 'specialties'];

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Gate;
 /**
  * Medicamentos del catálogo.
  */
+#[Group('Catálogo', weight: 4)]
 class ProductController extends Controller
 {
     /**

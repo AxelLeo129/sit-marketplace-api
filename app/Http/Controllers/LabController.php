@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LabRequest;
 use App\Http\Resources\LabResource;
 use App\Models\Lab;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -12,6 +13,7 @@ use Illuminate\Http\Response;
 /**
  * Laboratorios fabricantes.
  */
+#[Group('Catálogo', weight: 4)]
 class LabController extends Controller
 {
     /**

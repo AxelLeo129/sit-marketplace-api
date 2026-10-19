@@ -2,7 +2,10 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CustomerAddressController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LabController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\PresentationController;
@@ -37,6 +40,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/prescriptions/{prescription}/reschedule', [PrescriptionController::class, 'reschedule']);
     Route::post('/prescriptions/{prescription}/cancel', [PrescriptionController::class, 'cancel']);
     Route::post('/prescriptions/{prescription}/send', [PrescriptionController::class, 'send'])->middleware('throttle:5,1');
+
+    // Clientes y direcciones: call-center y administrador.
+    Route::middleware('can:manage-customers')->group(function () {
+        Route::apiResource('customers', CustomerController::class)->except('destroy');
+        // scopeBindings: la dirección debe pertenecer al cliente de la URL (si no, 404).
+        Route::scopeBindings()->group(function () {
+            Route::apiResource('customers.addresses', CustomerAddressController::class)->only(['store', 'update', 'destroy']);
+        });
+    });
+
+    // Pedidos (permisos en OrderPolicy).
+    Route::apiResource('orders', OrderController::class)->only(['index', 'store', 'show']);
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
 
     // Catálogo: todos los usuarios lo consultan, solo el administrador lo modifica.
     Route::apiResource('categories', CategoryController::class)->only(['index', 'show']);

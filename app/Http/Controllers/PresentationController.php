@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\PresentationRequest;
 use App\Http\Resources\PresentationResource;
 use App\Models\Presentation;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -12,6 +13,7 @@ use Illuminate\Http\Response;
 /**
  * Presentaciones de los medicamentos.
  */
+#[Group('Catálogo', weight: 4)]
 class PresentationController extends Controller
 {
     /**

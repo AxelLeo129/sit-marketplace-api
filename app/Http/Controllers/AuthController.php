@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Hash;
  * sistema anterior el registro aceptaba el rol desde la petición y cualquiera
  * podía crearse una cuenta de administrador.
  */
+#[Group('Autenticación', weight: 1)]
 class AuthController extends Controller
 {
     /**

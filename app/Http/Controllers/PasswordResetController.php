@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
@@ -15,6 +16,7 @@ use Illuminate\Validation\Rules\Password as PasswordRule;
  * en texto plano por correo. Ahora se envía un enlace de un solo uso que
  * expira, y el usuario elige su nueva contraseña.
  */
+#[Group('Autenticación', weight: 1)]
 class PasswordResetController extends Controller
 {
     /**

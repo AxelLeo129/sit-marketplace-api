@@ -30,6 +30,12 @@ class AppServiceProvider extends ServiceProvider
         // Solo el administrador modifica el catálogo; el resto de roles solo lo consulta.
         Gate::define('manage-catalog', fn (User $user) => $user->hasRole(Role::Admin));
 
+        // El call-center registra a los clientes y sus direcciones al crear pedidos.
+        Gate::define('manage-customers', fn (User $user) => $user->hasRole(Role::Admin, Role::CallCenter));
+
+        // Costos, márgenes y comisiones: información sensible del negocio, solo para el administrador.
+        Gate::define('view-financials', fn (User $user) => $user->hasRole(Role::Admin));
+
         // Reglas para toda contraseña nueva.
         Password::defaults(fn () => Password::min(8)->letters()->numbers());
 

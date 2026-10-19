@@ -16,6 +16,26 @@ API para la gestión de recetas médicas y la venta y entrega de medicamentos.
 
 Las tasas de IVA, tarjeta y comisiones están en `config/marketplace.php`. El cálculo se hace solo en el backend (`App\Services\SaleCalculator`).
 
+#### 💰 Pedidos y comisiones
+
+Al convertir una receta en pedido (`App\Services\OrderPlacement`):
+
+- Se **reservan las existencias** y se devuelven si el pedido se cancela.
+- El servidor decide el **origen** de cada producto: *recetado* si estaba en la receta, *agregado por el call-center* si no.
+- Cada línea guarda su desglose: total, neto, IVA, cargo de tarjeta, costo y margen bruto.
+- Comisiones sobre el margen bruto de cada línea:
+
+| Beneficiario | Tasa |
+|---|---|
+| Médico | 20 % en la 1.ª compra, 15 % en la 2.ª, 10 % en la 3.ª, 5 % en la 4.ª y 0 % después. Solo en productos que él recetó |
+| Visitador del médico | 2 % |
+| Call-center | 0 % en la 1.ª compra, 1 % en las recompras |
+| Mensajero | 0.5 % (se le asigna al despachar) |
+
+Si el margen es cero o negativo, nadie cobra comisión. El número de compra cuenta los pedidos anteriores, no cancelados, del mismo producto, cliente y médico.
+
+Quién ve los montos: el administrador ve costo, margen y comisiones; facturación ve neto e IVA; el resto solo precios y totales. Nunca se guarda el número completo ni el vencimiento de la tarjeta.
+
 No hay registro público: los usuarios los crea un administrador.
 
 ---
@@ -38,6 +58,7 @@ No hay registro público: los usuarios los crea un administrador.
 - Eloquent ORM
 - MySQL
 - Firebase Storage (imágenes)
+- Scramble (documentación OpenAPI / Swagger generada desde el código)
 
 ---
 
@@ -92,7 +113,7 @@ Sigue estos pasos para configurar el proyecto localmente:
     ```
     `storage:link` publica las imágenes subidas en local (`MEDIA_DISK=public`).
 
-    En entorno local también se cargan datos demo: un usuario por rol (`<rol>@demo.test`, contraseña `password`).
+    En entorno local también se cargan datos demo: un usuario por rol (`<rol>@demo.test`, contraseña `password`), 20 productos, 5 recetas del médico demo y un cliente (teléfono `55550000`) con sus direcciones.
 
     Para correr los tests:
     ```bash
@@ -117,9 +138,24 @@ Con Laragon no hace falta `artisan serve`: la API queda en 👉 http://sit-marke
 
 ---
 
+### 📖 Documentación interactiva (Swagger / OpenAPI)
+
+La documentación se genera automáticamente desde el código (rutas, validaciones, respuestas y permisos) con [Scramble](https://scramble.dedoc.co), así que siempre está al día.
+
+| URL | Contenido |
+|---|---|
+| http://sit-marketplace-api.test/docs/api | Interfaz para explorar y **probar** los endpoints |
+| http://sit-marketplace-api.test/docs/api.json | Especificación OpenAPI 3.1 (importable en Postman o Insomnia) |
+
+Para probar endpoints protegidos: obtén un token con `POST /api/login` y pégalo en el botón de autenticación (Bearer) de la interfaz.
+
+Por seguridad, la documentación **solo está disponible con `APP_ENV=local`**; en producción responde 403. Para exportar la especificación a un archivo: `php artisan scramble:export`.
+
+---
+
 ### 🔌 Endpoints
 
-Todas las rutas llevan el prefijo `/api`. Salvo las públicas, requieren el header `Authorization: Bearer <token>`.
+Todas las rutas llevan el prefijo `/api`. Salvo las públicas, requieren el header `Authorization: Bearer <token>`. El detalle de cada campo está en la documentación interactiva.
 
 | Método | Ruta | Quién | Descripción |
 |---|---|---|---|
@@ -139,6 +175,13 @@ Todas las rutas llevan el prefijo `/api`. Salvo las públicas, requieren el head
 | POST | `/prescriptions/{id}/reschedule` | Call-center, admin | Agenda otra llamada (`callback_at`) |
 | POST | `/prescriptions/{id}/cancel` | Call-center, admin | Cancela la receta |
 | POST | `/prescriptions/{id}/send` | Médico autor | Envía la receta al correo del paciente |
+| GET, POST | `/customers` | Call-center, admin | Busca (`search`: teléfono, nombre o NIT) o registra clientes |
+| GET, PUT | `/customers/{id}` | Call-center, admin | Consulta o edita un cliente con sus direcciones |
+| POST, PUT, DELETE | `/customers/{id}/addresses/{addressId}` | Call-center, admin | Direcciones de facturación (`billing`) o entrega (`shipping`) |
+| GET | `/orders` | Admin, call-center, facturación, despachador, mensajero | Pedidos visibles para el rol. Filtros: `status`, `search`, `created_from`, `created_to` |
+| POST | `/orders` | Call-center, admin | Convierte una receta abierta en pedido |
+| GET | `/orders/{id}` | Según rol | El desglose financiero depende del rol |
+| POST | `/orders/{id}/cancel` | Call-center, admin | Cancela si aún no tiene mensajero; devuelve existencias |
 | GET | `/categories`, `/labs`, `/presentations`, `/products` | Autenticado | Consulta del catálogo |
 | POST, PUT, DELETE | `/categories`, `/labs`, `/presentations`, `/products` | Admin | Administración del catálogo |
 | POST, DELETE | `/products/{id}/image` | Admin | Sube o quita la imagen del producto |

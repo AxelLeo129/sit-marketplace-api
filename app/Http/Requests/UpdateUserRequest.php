@@ -33,9 +33,10 @@ class UpdateUserRequest extends FormRequest
 
     public function rules(): array
     {
-        $user = $this->targetUser();
-        $isSelf = $this->user()->is($user);
-        $isDoctor = $this->input('role', $user->role->value) === Role::Doctor->value;
+        // Sin usuario en la ruta (p. ej. al generar la documentación) se muestran las reglas de un médico.
+        $user = $this->route('user');
+        $isSelf = $user !== null && $this->user()?->is($user) === true;
+        $isDoctor = $this->input('role', $user?->role->value ?? Role::Doctor->value) === Role::Doctor->value;
 
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],

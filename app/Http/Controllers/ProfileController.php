@@ -8,6 +8,7 @@ use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Services\ImageStorage;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * El usuario autenticado consulta y edita sus propios datos.
  */
+#[Group('Mi perfil', weight: 2)]
 class ProfileController extends Controller
 {
     private const RELATIONS = ['salesRep', 'doctorProfile', 'specialties'];
