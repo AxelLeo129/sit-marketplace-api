@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Customer;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -18,8 +19,7 @@ class CustomerRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            // NIT guatemalteco (dígitos y, opcionalmente, una K al final) o "CF" para consumidor final.
-            'tax_id' => ['required', 'string', 'max:20', 'regex:/^(CF|\d{1,12}-?[\dK])$/i'],
+            'tax_id' => ['required', 'string', 'max:20', 'regex:'.Customer::TAX_ID_PATTERN],
             'phone' => ['required', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:255'],
             'gender' => ['nullable', 'string', 'max:20'],

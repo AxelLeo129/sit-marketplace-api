@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CourierController;
 use App\Http\Controllers\CustomerAddressController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LabController;
@@ -50,9 +51,15 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-    // Pedidos (permisos en OrderPolicy).
+    // Pedidos y su flujo facturación → despacho → entrega (permisos en OrderPolicy).
     Route::apiResource('orders', OrderController::class)->only(['index', 'store', 'show']);
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
+    Route::post('/orders/{order}/invoice', [OrderController::class, 'invoice']);
+    Route::post('/orders/{order}/assign', [OrderController::class, 'assign']);
+    Route::post('/orders/{order}/start-delivery', [OrderController::class, 'startDelivery']);
+    Route::post('/orders/{order}/deliver', [OrderController::class, 'deliver']);
+    Route::post('/orders/{order}/fail-delivery', [OrderController::class, 'failDelivery']);
+    Route::get('/couriers', [CourierController::class, 'index'])->middleware('can:dispatch-orders');
 
     // Catálogo: todos los usuarios lo consultan, solo el administrador lo modifica.
     Route::apiResource('categories', CategoryController::class)->only(['index', 'show']);

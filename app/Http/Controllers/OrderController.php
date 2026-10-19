@@ -3,10 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Enums\OrderStatus;
+use App\Http\Requests\AssignCourierRequest;
+use App\Http\Requests\DeliverOrderRequest;
+use App\Http\Requests\FailDeliveryRequest;
+use App\Http\Requests\InvoiceOrderRequest;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\Prescription;
+use App\Models\User;
+use App\Services\OrderFulfillment;
 use App\Services\OrderPlacement;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
@@ -16,13 +22,17 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 /**
- * Pedidos. El call-center los crea a partir de una receta.
+ * Pedidos: el call-center los crea a partir de una receta, facturación los
+ * factura, el despachador asigna el mensajero y este los entrega.
  * Los permisos están en App\Policies\OrderPolicy.
  */
 #[Group('Pedidos', weight: 7)]
 class OrderController extends Controller
 {
-    public function __construct(private readonly OrderPlacement $placement) {}
+    public function __construct(
+        private readonly OrderPlacement $placement,
+        private readonly OrderFulfillment $fulfillment,
+    ) {}
 
     /**
      * Lista paginada de los pedidos que el usuario puede ver, del más reciente al más antiguo.
@@ -75,17 +85,67 @@ class OrderController extends Controller
     {
         Gate::authorize('view', $order);
 
-        return new OrderResource($order->load($this->relations()));
+        return $this->respond($order);
     }
 
     /**
-     * Cancela un pedido aún no asignado a mensajero y devuelve las existencias.
+     * Cancela un pedido aún no asignado a mensajero, o cuya entrega falló, y devuelve las existencias.
      */
     public function cancel(Order $order): OrderResource
     {
         Gate::authorize('cancel', $order);
 
-        return new OrderResource($this->placement->cancel($order)->load($this->relations()));
+        return $this->respond($this->placement->cancel($order));
+    }
+
+    /**
+     * Facturación registra el número de factura. El NIT y la fecha son opcionales:
+     * por defecto, el NIT del cliente y la fecha actual.
+     */
+    public function invoice(InvoiceOrderRequest $request, Order $order): OrderResource
+    {
+        return $this->respond($this->fulfillment->invoice($request->user(), $order, $request->validated()));
+    }
+
+    /**
+     * El despachador asigna (o reasigna) el mensajero. También sirve para reintentar una entrega fallida.
+     */
+    public function assign(AssignCourierRequest $request, Order $order): OrderResource
+    {
+        $courier = User::findOrFail($request->validated('courier_id'));
+
+        return $this->respond($this->fulfillment->assign($request->user(), $order, $courier));
+    }
+
+    /**
+     * El mensajero asignado confirma que sale a ruta.
+     */
+    public function startDelivery(Request $request, Order $order): OrderResource
+    {
+        Gate::authorize('startDelivery', $order);
+
+        return $this->respond($this->fulfillment->startDelivery($request->user(), $order));
+    }
+
+    /**
+     * El mensajero confirma la entrega con el nombre de quien recibe.
+     */
+    public function deliver(DeliverOrderRequest $request, Order $order): OrderResource
+    {
+        return $this->respond($this->fulfillment->deliver($request->user(), $order, $request->validated()));
+    }
+
+    /**
+     * El mensajero reporta que no pudo entregar, con el motivo.
+     */
+    public function failDelivery(FailDeliveryRequest $request, Order $order): OrderResource
+    {
+        return $this->respond($this->fulfillment->failDelivery($request->user(), $order, $request->validated('notes')));
+    }
+
+    private function respond(Order $order): OrderResource
+    {
+        return new OrderResource($order->load($this->relations()));
     }
 
     /**
@@ -96,7 +156,7 @@ class OrderController extends Controller
     private function relations(): array
     {
         return [
-            'customer', 'billingAddress', 'shippingAddress', 'creator', 'courier', 'items.product.presentation',
+            'customer', 'billingAddress', 'shippingAddress', 'creator', 'invoicer', 'courier', 'items.product.presentation',
             ...(Gate::allows('view-financials') ? ['items.commissions.beneficiary'] : []),
         ];
     }

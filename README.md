@@ -36,6 +36,20 @@ Si el margen es cero o negativo, nadie cobra comisión. El número de compra cue
 
 Quién ve los montos: el administrador ve costo, margen y comisiones; facturación ve neto e IVA; el resto solo precios y totales. Nunca se guarda el número completo ni el vencimiento de la tarjeta.
 
+#### 🚚 Facturación, despacho y entrega
+
+Cada paso lo hace un rol distinto y solo desde el estado anterior (`App\Services\OrderFulfillment`):
+
+| Paso | Quién | Estado |
+|---|---|---|
+| Registrar la factura (número; NIT y fecha opcionales) | Facturación | Pendiente de factura → Facturado |
+| Asignar o reasignar mensajero | Despachador | Facturado / Asignado / No entregado → Asignado |
+| Salir a ruta | Mensajero asignado | Asignado → En ruta |
+| Entregar (nombre de quien recibe) | Mensajero asignado | En ruta → Entregado |
+| Reportar que no se pudo entregar (motivo) | Mensajero asignado | En ruta → No entregado |
+
+La comisión de mensajero la cobra quien tenga el pedido asignado. Un pedido no entregado se puede reasignar o cancelar (las existencias regresan; si ya estaba facturado, la factura se anula fuera del sistema). Cada pedido indica en `can` qué acciones puede hacer el usuario, para que el frontend muestre solo los botones válidos.
+
 No hay registro público: los usuarios los crea un administrador.
 
 ---
@@ -181,7 +195,13 @@ Todas las rutas llevan el prefijo `/api`. Salvo las públicas, requieren el head
 | GET | `/orders` | Admin, call-center, facturación, despachador, mensajero | Pedidos visibles para el rol. Filtros: `status`, `search`, `created_from`, `created_to` |
 | POST | `/orders` | Call-center, admin | Convierte una receta abierta en pedido |
 | GET | `/orders/{id}` | Según rol | El desglose financiero depende del rol |
-| POST | `/orders/{id}/cancel` | Call-center, admin | Cancela si aún no tiene mensajero; devuelve existencias |
+| POST | `/orders/{id}/cancel` | Call-center, admin | Cancela si aún no tiene mensajero o si la entrega falló; devuelve existencias |
+| POST | `/orders/{id}/invoice` | Facturación, admin | Registra la factura (`invoice_number`; opcionales `invoice_tax_id`, `invoiced_at`) |
+| GET | `/couriers` | Despachador, admin | Mensajeros activos con sus entregas pendientes |
+| POST | `/orders/{id}/assign` | Despachador, admin | Asigna o reasigna el mensajero (`courier_id`) |
+| POST | `/orders/{id}/start-delivery` | Mensajero asignado | Sale a ruta |
+| POST | `/orders/{id}/deliver` | Mensajero asignado | Confirma la entrega (`received_by`, `notes` opcional) |
+| POST | `/orders/{id}/fail-delivery` | Mensajero asignado | Reporta que no pudo entregar (`notes` con el motivo) |
 | GET | `/categories`, `/labs`, `/presentations`, `/products` | Autenticado | Consulta del catálogo |
 | POST, PUT, DELETE | `/categories`, `/labs`, `/presentations`, `/products` | Admin | Administración del catálogo |
 | POST, DELETE | `/products/{id}/image` | Admin | Sube o quita la imagen del producto |

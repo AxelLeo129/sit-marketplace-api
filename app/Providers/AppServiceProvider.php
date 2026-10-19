@@ -33,6 +33,9 @@ class AppServiceProvider extends ServiceProvider
         // El call-center registra a los clientes y sus direcciones al crear pedidos.
         Gate::define('manage-customers', fn (User $user) => $user->hasRole(Role::Admin, Role::CallCenter));
 
+        // El despachador reparte los pedidos facturados entre los mensajeros.
+        Gate::define('dispatch-orders', fn (User $user) => $user->hasRole(Role::Admin, Role::Dispatcher));
+
         // Costos, márgenes y comisiones: información sensible del negocio, solo para el administrador.
         Gate::define('view-financials', fn (User $user) => $user->hasRole(Role::Admin));
 

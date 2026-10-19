@@ -35,7 +35,7 @@ return new class extends Migration
 
             // Facturación.
             $table->string('invoice_tax_id', 20)->nullable();
-            $table->string('invoice_number', 50)->nullable();
+            $table->string('invoice_number', 50)->nullable()->unique();
             $table->timestamp('invoiced_at')->nullable();
             $table->foreignId('invoiced_by')->nullable()->constrained('users')->nullOnDelete();
 

@@ -16,6 +16,9 @@ class Customer extends Model
 {
     use HasFactory;
 
+    /** NIT guatemalteco (dígitos y, opcionalmente, una K al final) o "CF" para consumidor final. */
+    public const TAX_ID_PATTERN = "/^(CF|\d{1,12}-?[\dK])$/i";
+
     protected function casts(): array
     {
         return [

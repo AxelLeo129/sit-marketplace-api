@@ -35,6 +35,9 @@ class OrderResource extends JsonResource
                 'tax_id' => $this->invoice_tax_id,
                 'number' => $this->invoice_number,
                 'invoiced_at' => $this->invoiced_at,
+                'invoiced_by' => $this->whenLoaded('invoicer', fn () => $this->invoicer
+                    ? ['id' => $this->invoicer->id, 'name' => $this->invoicer->name]
+                    : null),
             ],
             'delivery' => [
                 'courier' => $this->whenLoaded('courier', fn () => $this->courier
@@ -47,8 +50,13 @@ class OrderResource extends JsonResource
                 'notes' => $this->delivery_notes,
             ],
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
+            // Acciones que el usuario puede hacer ahora, para mostrar u ocultar botones.
             'can' => [
                 'cancel' => $request->user()->can('cancel', $this->resource),
+                'invoice' => $request->user()->can('invoice', $this->resource),
+                'assign' => $request->user()->can('assign', $this->resource),
+                'start_delivery' => $request->user()->can('startDelivery', $this->resource),
+                'complete_delivery' => $request->user()->can('completeDelivery', $this->resource),
             ],
             'created_at' => $this->created_at,
         ];

@@ -29,11 +29,21 @@ enum OrderStatus: string
     case Cancelled = 'cancelled';
 
     /**
-     * Un pedido se puede cancelar mientras no se haya asignado a un mensajero.
+     * Un pedido se puede cancelar mientras no se haya asignado a un mensajero,
+     * o si la entrega falló (el producto regresa a bodega).
      */
     public function isCancellable(): bool
     {
-        return $this === self::PendingInvoice || $this === self::Invoiced;
+        return in_array($this, [self::PendingInvoice, self::Invoiced, self::DeliveryFailed], true);
+    }
+
+    /**
+     * El despachador puede asignar (o reasignar) mensajero a un pedido facturado,
+     * a uno asignado que aún no sale a ruta, o a uno cuya entrega falló.
+     */
+    public function isAssignable(): bool
+    {
+        return in_array($this, [self::Invoiced, self::Assigned, self::DeliveryFailed], true);
     }
 
     /**
