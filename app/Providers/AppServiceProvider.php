@@ -36,6 +36,9 @@ class AppServiceProvider extends ServiceProvider
         // El despachador reparte los pedidos facturados entre los mensajeros.
         Gate::define('dispatch-orders', fn (User $user) => $user->hasRole(Role::Admin, Role::Dispatcher));
 
+        // Roles que cobran comisión y pueden consultar las suyas.
+        Gate::define('earn-commissions', fn (User $user) => $user->hasRole(Role::Doctor, Role::SalesRep, Role::CallCenter, Role::Courier));
+
         // Costos, márgenes y comisiones: información sensible del negocio, solo para el administrador.
         Gate::define('view-financials', fn (User $user) => $user->hasRole(Role::Admin));
 

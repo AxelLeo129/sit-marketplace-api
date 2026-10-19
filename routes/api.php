@@ -13,6 +13,7 @@ use App\Http\Controllers\PresentationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -60,6 +61,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/{order}/deliver', [OrderController::class, 'deliver']);
     Route::post('/orders/{order}/fail-delivery', [OrderController::class, 'failDelivery']);
     Route::get('/couriers', [CourierController::class, 'index'])->middleware('can:dispatch-orders');
+
+    // Reportes: el administrador ve todo; quien cobra comisión, solo las suyas.
+    Route::get('/reports/my-commissions', [ReportController::class, 'myCommissions'])->middleware('can:earn-commissions');
+    Route::middleware('can:view-financials')->group(function () {
+        Route::get('/reports/sales', [ReportController::class, 'sales']);
+        Route::get('/reports/commissions', [ReportController::class, 'commissions']);
+    });
 
     // Catálogo: todos los usuarios lo consultan, solo el administrador lo modifica.
     Route::apiResource('categories', CategoryController::class)->only(['index', 'show']);

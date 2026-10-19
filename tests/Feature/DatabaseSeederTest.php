@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\OrderStatus;
+use App\Enums\PrescriptionStatus;
 use App\Enums\Role;
+use App\Models\Order;
 use App\Models\Prescription;
 use App\Models\User;
 use Database\Seeders\AdminUserSeeder;
@@ -45,6 +48,10 @@ class DatabaseSeederTest extends TestCase
 
         $doctor = User::firstWhere('email', 'doctor@demo.test');
         $this->assertNotNull($doctor->doctorProfile);
-        $this->assertSame(5, Prescription::where('doctor_id', $doctor->id)->count());
+        $this->assertSame(5, Prescription::where('doctor_id', $doctor->id)->where('status', PrescriptionStatus::Pending)->count());
+
+        // Pedidos demo para los reportes: 2 entregados y 1 pendiente de factura.
+        $this->assertSame(2, Order::where('status', OrderStatus::Delivered)->count());
+        $this->assertSame(1, Order::where('status', OrderStatus::PendingInvoice)->count());
     }
 }

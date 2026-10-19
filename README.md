@@ -50,6 +50,16 @@ Cada paso lo hace un rol distinto y solo desde el estado anterior (`App\Services
 
 La comisión de mensajero la cobra quien tenga el pedido asignado. Un pedido no entregado se puede reasignar o cancelar (las existencias regresan; si ya estaba facturado, la factura se anula fuera del sistema). Cada pedido indica en `can` qué acciones puede hacer el usuario, para que el frontend muestre solo los botones válidos.
 
+#### 📊 Reportes
+
+Solo cuentan los pedidos **entregados**, por su fecha de entrega (`App\Services\SalesReport`). Sin `from`/`to`, el período es el mes en curso.
+
+| Reporte | Quién | Contenido |
+|---|---|---|
+| Ventas | Admin | Ventas, IVA, cargos de tarjeta, costo, margen, comisiones y utilidad; serie por día o mes; productos más vendidos; pedidos del período por estado |
+| Comisiones | Admin | Total por beneficiario y rol |
+| Mis comisiones | Médico, visitador, call-center, mensajero | Su total del período y el detalle por producto vendido (sin costos ni márgenes) |
+
 No hay registro público: los usuarios los crea un administrador.
 
 ---
@@ -127,7 +137,7 @@ Sigue estos pasos para configurar el proyecto localmente:
     ```
     `storage:link` publica las imágenes subidas en local (`MEDIA_DISK=public`).
 
-    En entorno local también se cargan datos demo: un usuario por rol (`<rol>@demo.test`, contraseña `password`), 20 productos, 5 recetas del médico demo y un cliente (teléfono `55550000`) con sus direcciones.
+    En entorno local también se cargan datos demo: un usuario por rol (`<rol>@demo.test`, contraseña `password`), 20 productos, 5 recetas abiertas del médico demo, un cliente (teléfono `55550000`) con sus direcciones y 3 pedidos (2 entregados, para los reportes, y 1 pendiente de factura).
 
     Para correr los tests:
     ```bash
@@ -202,6 +212,9 @@ Todas las rutas llevan el prefijo `/api`. Salvo las públicas, requieren el head
 | POST | `/orders/{id}/start-delivery` | Mensajero asignado | Sale a ruta |
 | POST | `/orders/{id}/deliver` | Mensajero asignado | Confirma la entrega (`received_by`, `notes` opcional) |
 | POST | `/orders/{id}/fail-delivery` | Mensajero asignado | Reporta que no pudo entregar (`notes` con el motivo) |
+| GET | `/reports/sales` | Admin | Resumen de ventas. Filtros: `from`, `to`, `group_by` (`day` o `month`) |
+| GET | `/reports/commissions` | Admin | Comisiones por beneficiario. Filtros: `from`, `to`, `role`, `user_id` |
+| GET | `/reports/my-commissions` | Médico, visitador, call-center, mensajero | Comisiones propias. Filtros: `from`, `to`, `per_page` |
 | GET | `/categories`, `/labs`, `/presentations`, `/products` | Autenticado | Consulta del catálogo |
 | POST, PUT, DELETE | `/categories`, `/labs`, `/presentations`, `/products` | Admin | Administración del catálogo |
 | POST, DELETE | `/products/{id}/image` | Admin | Sube o quita la imagen del producto |
