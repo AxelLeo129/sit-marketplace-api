@@ -119,6 +119,7 @@ Sigue estos pasos para configurar el proyecto localmente:
     ```
     Edita el archivo `.env` con tu configuración:
     ```env
+    APP_URL=http://sit-marketplace-api.test
     DB_CONNECTION=mysql
     DB_HOST=127.0.0.1
     DB_PORT=3306

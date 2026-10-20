@@ -94,7 +94,8 @@ return [
             'theme' => 'light',
             'hideTryIt' => false,
             'hideSchemas' => false,
-            'logo' => '',
+            // Logo de SIT en la barra lateral de la documentación.
+            'logo' => rtrim((string) env('APP_URL'), '/').'/images/sit-logo.png',
             'tryItCredentialsPolicy' => 'include',
             'layout' => 'responsive',
             'router' => 'hash',
