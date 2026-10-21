@@ -74,6 +74,16 @@ class PrescriptionTest extends TestCase
             ->assertJsonCount(2, 'data.items');
     }
 
+    public function test_items_include_the_product_presentation_and_lab(): void
+    {
+        $doctor = $this->doctor();
+        $prescription = $this->prescriptionFor($doctor);
+
+        $this->actingAs($doctor)
+            ->getJson("/api/prescriptions/{$prescription->id}")
+            ->assertJsonStructure(['data' => ['items' => [['product' => ['presentation' => ['label'], 'lab' => ['name']]]]]]);
+    }
+
     public function test_only_doctors_issue_prescriptions(): void
     {
         $this->actingAs($this->callCenter())->postJson('/api/prescriptions', $this->payload())->assertForbidden();

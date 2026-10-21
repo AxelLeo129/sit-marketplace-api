@@ -24,7 +24,8 @@ use Illuminate\Validation\Rule;
 #[Group('Recetas', weight: 5)]
 class PrescriptionController extends Controller
 {
-    private const RELATIONS = ['doctor.doctorProfile', 'items.product.presentation'];
+    // El producto va completo (presentación y laboratorio) para mostrarlo igual que en el catálogo.
+    private const RELATIONS = ['doctor.doctorProfile', 'items.product.presentation', 'items.product.lab'];
 
     /**
      * Lista paginada de las recetas que el usuario puede ver.
