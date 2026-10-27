@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AuthEventType;
 use App\Enums\Role;
 use App\Http\Requests\ImageRequest;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
+use App\Services\AuthAuditLog;
 use App\Services\ImageStorage;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
@@ -46,12 +48,13 @@ class ProfileController extends Controller
     /**
      * Cambia la contraseña y cierra las demás sesiones (se conserva la actual).
      */
-    public function updatePassword(UpdatePasswordRequest $request): JsonResponse
+    public function updatePassword(UpdatePasswordRequest $request, AuthAuditLog $audit): JsonResponse
     {
         $user = $request->user();
 
         $user->update(['password' => $request->validated('password')]);
         $user->tokens()->whereKeyNot($user->currentAccessToken()->getKey())->delete();
+        $audit->record(AuthEventType::PasswordChanged, $user);
 
         return response()->json(['message' => 'Contraseña actualizada.']);
     }

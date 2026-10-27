@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AuthEventType;
 use App\Models\User;
+use App\Services\AccountLockout;
+use App\Services\AuthAuditLog;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +22,11 @@ use Illuminate\Validation\Rules\Password as PasswordRule;
 #[Group('Autenticación', weight: 1)]
 class PasswordResetController extends Controller
 {
+    public function __construct(
+        private readonly AccountLockout $lockout,
+        private readonly AuthAuditLog $audit,
+    ) {}
+
     /**
      * Envía el enlace de recuperación. Responde lo mismo exista o no el correo,
      * para no revelar qué cuentas existen.
@@ -28,6 +36,11 @@ class PasswordResetController extends Controller
         $request->validate(['email' => ['required', 'email']]);
 
         Password::sendResetLink($request->only('email'));
+        $this->audit->record(
+            AuthEventType::PasswordResetRequested,
+            User::firstWhere('email', $request->input('email')),
+            $request->input('email'),
+        );
 
         return response()->json([
             'message' => 'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.',
@@ -35,7 +48,8 @@ class PasswordResetController extends Controller
     }
 
     /**
-     * Cambia la contraseña con el token del enlace y cierra todas las sesiones del usuario.
+     * Cambia la contraseña con el token del enlace, cierra todas las sesiones
+     * del usuario y quita el bloqueo por intentos fallidos.
      */
     public function reset(Request $request): JsonResponse
     {
@@ -50,6 +64,8 @@ class PasswordResetController extends Controller
             function (User $user, string $password) {
                 $user->update(['password' => $password]);
                 $user->tokens()->delete();
+                $this->lockout->clear($user);
+                $this->audit->record(AuthEventType::PasswordResetCompleted, $user);
             },
         );
 

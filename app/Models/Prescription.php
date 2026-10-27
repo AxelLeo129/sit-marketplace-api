@@ -28,6 +28,10 @@ class Prescription extends Model
             'allows_call_center' => 'boolean',
             'status' => PrescriptionStatus::class,
             'callback_at' => 'datetime',
+            // Datos de salud: se guardan cifrados con APP_KEY; una copia de la base no los expone.
+            'symptoms' => 'encrypted',
+            'diagnosis' => 'encrypted',
+            'observations' => 'encrypted',
         ];
     }
 

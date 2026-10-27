@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AuthEvent;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Storage;
@@ -7,6 +8,9 @@ use Illuminate\Support\Str;
 
 // Borra a diario los tokens de Sanctum vencidos hace más de 24 horas.
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
+
+// Borra a diario los eventos de autenticación más antiguos que la retención (config/security.php).
+Schedule::command('model:prune', ['--model' => [AuthEvent::class]])->daily();
 
 // Comprueba que el disco de imágenes funciona: sube un archivo de prueba, lo lee y lo borra.
 Artisan::command('media:check', function () {

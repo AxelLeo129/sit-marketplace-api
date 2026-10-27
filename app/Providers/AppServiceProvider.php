@@ -8,10 +8,14 @@ use App\Models\User;
 use App\Services\SaleCalculator;
 use Google\Cloud\Storage\StorageClient;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Sanctum\Sanctum;
 use League\Flysystem\Filesystem;
@@ -49,8 +53,18 @@ class AppServiceProvider extends ServiceProvider
         // Costos, márgenes y comisiones: información sensible del negocio, solo para el administrador.
         Gate::define('view-financials', fn (User $user) => $user->hasRole(Role::Admin));
 
-        // Reglas para toda contraseña nueva.
-        Password::defaults(fn () => Password::min(8)->letters()->numbers());
+        // Registro de accesos (IPs, intentos fallidos, bloqueos): solo el administrador.
+        Gate::define('view-security', fn (User $user) => $user->hasRole(Role::Admin));
+
+        // Reglas para toda contraseña nueva. Además se rechazan las que aparecen en
+        // filtraciones públicas (solo viajan 5 caracteres del hash, nunca la contraseña).
+        Password::defaults(function () {
+            $rule = Password::min(8)->letters()->numbers();
+
+            return config('security.check_breached_passwords') ? $rule->uncompromised() : $rule;
+        });
+
+        $this->configureRateLimits();
 
         // Un token deja de servir en cuanto el usuario se desactiva, sin esperar a que expire.
         Sanctum::authenticateAccessTokensUsing(
@@ -62,6 +76,21 @@ class AppServiceProvider extends ServiceProvider
             .'/reset-password?'.http_build_query(['token' => $token, 'email' => $user->email]));
 
         $this->registerFirebaseDisk();
+    }
+
+    /**
+     * Límites de peticiones de las rutas públicas de autenticación.
+     *
+     * El login se limita por IP y, además, por cuenta + IP: así un atacante no puede
+     * probar muchas contraseñas de una cuenta ni muchas cuentas desde una misma IP.
+     * El bloqueo de la cuenta (AccountLockout) cubre los ataques desde muchas IPs.
+     */
+    private function configureRateLimits(): void
+    {
+        RateLimiter::for('login', fn (Request $request) => [
+            Limit::perMinute(10)->by('login-ip:'.$request->ip()),
+            Limit::perMinute(5)->by('login-account:'.Str::lower((string) $request->input('login')).'|'.$request->ip()),
+        ]);
     }
 
     /**

@@ -57,8 +57,13 @@ return [
             'project_id' => env('FIREBASE_PROJECT_ID'),
             // p. ej. "mi-proyecto.firebasestorage.app"
             'bucket' => env('FIREBASE_STORAGE_BUCKET'),
-            // JSON de la cuenta de servicio. Nunca se versiona.
-            'credentials' => env('FIREBASE_CREDENTIALS', storage_path('app/private/firebase-credentials.json')),
+            // JSON de la cuenta de servicio. Nunca se versiona. Una ruta relativa se toma
+            // desde la raíz del proyecto (en peticiones web el directorio actual es public/).
+            'credentials' => (function (string $path): string {
+                $isAbsolute = str_starts_with($path, '/') || preg_match('/^[A-Za-z]:[\\\\\/]/', $path);
+
+                return $isAbsolute ? $path : base_path($path);
+            })(env('FIREBASE_CREDENTIALS', 'storage/app/private/firebase-credentials.json')),
             'throw' => true,
             'report' => false,
         ],

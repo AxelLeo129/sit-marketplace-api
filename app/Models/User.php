@@ -20,7 +20,7 @@ use Laravel\Sanctum\HasApiTokens;
  * Usuario del sistema. Su rol define qué módulos puede usar.
  */
 #[Fillable(['name', 'email', 'collegiate_number', 'phone', 'birth_date', 'avatar_path', 'role', 'sales_rep_id', 'is_active', 'password'])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password', 'remember_token', 'failed_login_attempts', 'lockout_count'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -34,6 +34,9 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => Role::class,
             'is_active' => 'boolean',
+            'failed_login_attempts' => 'integer',
+            'lockout_count' => 'integer',
+            'locked_until' => 'datetime',
         ];
     }
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AuthEventController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CourierController;
 use App\Http\Controllers\CustomerAddressController;
@@ -20,7 +21,8 @@ use Illuminate\Support\Facades\Route;
 /*
 | Rutas públicas. Limitadas por minuto para frenar fuerza bruta y abuso de correo.
 */
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+// "login": por IP y por cuenta + IP (ver AppServiceProvider::configureRateLimits).
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/forgot-password', [PasswordResetController::class, 'sendLink'])->middleware('throttle:3,1');
 Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:5,1');
 
@@ -61,6 +63,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/{order}/deliver', [OrderController::class, 'deliver']);
     Route::post('/orders/{order}/fail-delivery', [OrderController::class, 'failDelivery']);
     Route::get('/couriers', [CourierController::class, 'index'])->middleware('can:dispatch-orders');
+
+    // Seguridad: registro de accesos, solo el administrador.
+    Route::get('/security/auth-events', [AuthEventController::class, 'index'])->middleware('can:view-security');
 
     // Reportes: el administrador ve todo; quien cobra comisión, solo las suyas.
     Route::get('/reports/my-commissions', [ReportController::class, 'myCommissions'])->middleware('can:earn-commissions');

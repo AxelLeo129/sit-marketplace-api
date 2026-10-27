@@ -187,6 +187,27 @@ Las imágenes (productos, fotos de perfil y logos de clínica) se guardan en el 
 
 ---
 
+### 🔐 Seguridad
+
+| Medida | Detalle |
+|---|---|
+| Permisos | Policies y Gates en cada endpoint; los montos (costo, margen, comisiones) y los datos clínicos solo llegan a quien puede verlos |
+| Contraseñas | Argon2id, mínimo 8 caracteres con letras y números, y se rechazan las que aparecen en filtraciones públicas ([Have I Been Pwned](https://haveibeenpwned.com/Passwords), consulta anónima) |
+| Fuerza bruta | Login limitado por IP (10/min) y por cuenta + IP (5/min). Tras 5 contraseñas incorrectas la cuenta se bloquea 15 min; cada bloqueo siguiente dura el doble (tope 24 h). Restablecer la contraseña quita el bloqueo |
+| Enumeración de cuentas | Mismo mensaje y mismo tiempo de respuesta exista o no la cuenta |
+| Sesiones | Tokens guardados con hash, vencen a las 12 h y se revocan al cambiar la contraseña o desactivar al usuario |
+| Auditoría | Inicios y cierres de sesión, intentos fallidos, bloqueos y cambios de contraseña, con IP y navegador (`GET /security/auth-events`). Se guardan 365 días |
+| Datos de salud | Síntomas, diagnóstico y observaciones se guardan **cifrados** con `APP_KEY` |
+| Imágenes | Se vuelven a dibujar como WebP (sin metadatos EXIF/GPS ni contenido escondido) y se reducen a 1600 px |
+| Encabezados | `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, CSP que no permite cargar nada y HSTS por HTTPS |
+| Proxies | Solo se confía en `X-Forwarded-For` de las IPs de `TRUSTED_PROXIES`; sin configurar, nadie puede falsear su IP para saltarse los límites |
+
+Los valores (intentos, minutos, retención) se ajustan en `config/security.php` o con las variables del `.env.example`.
+
+> ⚠️ **No pierdas ni cambies `APP_KEY` en producción:** con ella se cifran los datos clínicos. Si hay que rotarla, la clave anterior va en `APP_PREVIOUS_KEYS` para poder seguir leyéndolos.
+
+---
+
 ### 📖 Documentación interactiva (Swagger / OpenAPI)
 
 La documentación se genera automáticamente desde el código (rutas, validaciones, respuestas y permisos) con [Scramble](https://scramble.dedoc.co), así que siempre está al día.
@@ -240,6 +261,7 @@ Todas las rutas llevan el prefijo `/api`. Salvo las públicas, requieren el head
 | GET | `/reports/sales` | Admin | Resumen de ventas. Filtros: `from`, `to`, `group_by` (`day` o `month`) |
 | GET | `/reports/commissions` | Admin | Comisiones por beneficiario. Filtros: `from`, `to`, `role`, `user_id` |
 | GET | `/reports/my-commissions` | Médico, visitador, call-center, mensajero | Comisiones propias. Filtros: `from`, `to`, `per_page` |
+| GET | `/security/auth-events` | Admin | Registro de accesos. Filtros: `type`, `search`, `ip`, `from`, `to`, `per_page` |
 | GET | `/categories`, `/labs`, `/presentations`, `/products` | Autenticado | Consulta del catálogo |
 | POST, PUT, DELETE | `/categories`, `/labs`, `/presentations`, `/products` | Admin | Administración del catálogo |
 | POST, DELETE | `/products/{id}/image` | Admin | Sube o quita la imagen del producto |
