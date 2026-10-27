@@ -15,8 +15,8 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
-    // Disco para imágenes (productos, avatares, logos). En local se usa "public";
-    // en producción será el disco de Firebase Storage.
+    // Disco para imágenes (productos, avatares, logos): "public" en local
+    // o "firebase" para Cloud Storage for Firebase.
     'media_disk' => env('MEDIA_DISK', 'public'),
 
     /*
@@ -48,6 +48,18 @@ return [
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,
+            'report' => false,
+        ],
+
+        // Cloud Storage for Firebase (driver registrado en AppServiceProvider).
+        'firebase' => [
+            'driver' => 'firebase',
+            'project_id' => env('FIREBASE_PROJECT_ID'),
+            // p. ej. "mi-proyecto.firebasestorage.app"
+            'bucket' => env('FIREBASE_STORAGE_BUCKET'),
+            // JSON de la cuenta de servicio. Nunca se versiona.
+            'credentials' => env('FIREBASE_CREDENTIALS', storage_path('app/private/firebase-credentials.json')),
+            'throw' => true,
             'report' => false,
         ],
 

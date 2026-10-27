@@ -3,13 +3,20 @@
 namespace App\Providers;
 
 use App\Enums\Role;
+use App\Filesystem\FirebaseStorageAdapter;
 use App\Models\User;
 use App\Services\SaleCalculator;
+use Google\Cloud\Storage\StorageClient;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Sanctum\Sanctum;
+use League\Flysystem\Filesystem;
+use League\Flysystem\GoogleCloudStorage\GoogleCloudStorageAdapter;
+use League\Flysystem\GoogleCloudStorage\UniformBucketLevelAccessVisibility;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -53,5 +60,26 @@ class AppServiceProvider extends ServiceProvider
         // El enlace del correo de recuperación abre la pantalla del frontend.
         ResetPassword::createUrlUsing(fn (User $user, string $token) => config('app.frontend_url')
             .'/reset-password?'.http_build_query(['token' => $token, 'email' => $user->email]));
+
+        $this->registerFirebaseDisk();
+    }
+
+    /**
+     * Driver "firebase" para Storage: el bucket de Cloud Storage for Firebase.
+     * El cliente solo se crea cuando se usa el disco (MEDIA_DISK=firebase).
+     */
+    private function registerFirebaseDisk(): void
+    {
+        Storage::extend('firebase', function (Application $app, array $config) {
+            $bucket = (new StorageClient([
+                'projectId' => $config['project_id'],
+                'keyFilePath' => $config['credentials'],
+            ]))->bucket($config['bucket']);
+
+            // Firebase controla el acceso con sus reglas, no con permisos por archivo (ACL).
+            $adapter = new GoogleCloudStorageAdapter($bucket, visibilityHandler: new UniformBucketLevelAccessVisibility);
+
+            return new FirebaseStorageAdapter(new Filesystem($adapter, $config), $adapter, $config);
+        });
     }
 }

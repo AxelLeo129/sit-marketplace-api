@@ -163,6 +163,30 @@ Con Laragon no hace falta `artisan serve`: la API queda en 👉 http://sit-marke
 
 ---
 
+### 🖼️ Imágenes en Firebase Storage
+
+Las imágenes (productos, fotos de perfil y logos de clínica) se guardan en el disco de `MEDIA_DISK`: `public` en local o `firebase` para Cloud Storage for Firebase. En la base de datos solo se guarda la ruta (p. ej. `products/abc.webp`), así que cambiar de disco no requiere migrar datos (los archivos ya subidos sí hay que copiarlos).
+
+> Cloud Storage for Firebase requiere el plan **Blaze** (pago por uso), que conserva una cuota sin costo. Conviene configurar una alerta de presupuesto en Google Cloud.
+
+1. En la [consola de Firebase](https://console.firebase.google.com), en el proyecto: **Compilación → Storage → Comenzar** (elige una región de EE. UU. para la cuota sin costo).
+2. **Configuración del proyecto → Cuentas de servicio → Generar nueva clave privada.** Guarda el JSON como `storage/app/private/firebase-credentials.json` (esa carpeta no se versiona). Nunca lo subas al repositorio.
+3. En `.env`:
+    ```env
+    MEDIA_DISK=firebase
+    FIREBASE_PROJECT_ID=tu-proyecto
+    FIREBASE_STORAGE_BUCKET=tu-proyecto.firebasestorage.app
+    ```
+4. Publica las reglas de Storage desde el repositorio del frontend (`npm run deploy:rules`): solo la API escribe y el navegador solo puede ver `avatars/`, `clinic-logos/` y `products/`.
+5. Comprueba la conexión:
+    ```bash
+    php artisan config:clear
+    php artisan media:check
+    ```
+    Sube, lee y borra un archivo de prueba, y muestra el formato de las URLs públicas.
+
+---
+
 ### 📖 Documentación interactiva (Swagger / OpenAPI)
 
 La documentación se genera automáticamente desde el código (rutas, validaciones, respuestas y permisos) con [Scramble](https://scramble.dedoc.co), así que siempre está al día.
