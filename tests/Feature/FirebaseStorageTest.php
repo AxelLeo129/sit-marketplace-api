@@ -49,6 +49,17 @@ class FirebaseStorageTest extends TestCase
         $this->assertInstanceOf(FirebaseStorageAdapter::class, Storage::disk('firebase'));
     }
 
+    public function test_builds_the_disk_from_credentials_in_an_environment_variable(): void
+    {
+        // Como en Railway: el contenido del JSON en FIREBASE_CREDENTIALS_JSON y ningún archivo.
+        config([
+            'filesystems.disks.firebase.credentials' => '/no/existe.json',
+            'filesystems.disks.firebase.credentials_json' => file_get_contents($this->credentials),
+        ]);
+
+        $this->assertInstanceOf(FirebaseStorageAdapter::class, Storage::disk('firebase'));
+    }
+
     public function test_urls_use_the_firebase_download_format(): void
     {
         $this->assertSame(

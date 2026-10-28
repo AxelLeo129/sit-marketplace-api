@@ -64,6 +64,9 @@ return [
 
                 return $isAbsolute ? $path : base_path($path);
             })(env('FIREBASE_CREDENTIALS', 'storage/app/private/firebase-credentials.json')),
+            // En servidores sin archivos propios (Railway), el contenido del JSON en una
+            // variable de entorno. Si está definida, tiene prioridad sobre el archivo.
+            'credentials_json' => env('FIREBASE_CREDENTIALS_JSON'),
             'throw' => true,
             'report' => false,
         ],

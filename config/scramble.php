@@ -3,7 +3,6 @@
 use Dedoc\Scramble\Http\Middleware\RestrictedDocsAccess;
 use Dedoc\Scramble\OpenApiVersion;
 use Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy;
-use Dedoc\Scramble\Support\Generator\SecurityScheme;
 
 return [
     /*
@@ -196,12 +195,10 @@ return [
      *     ],
      * ],
      */
-    // Las rutas con auth:sanctum se documentan con token Bearer; las demás, como públicas.
+    // Las rutas con auth:sanctum se documentan con token Bearer (el esquema por defecto);
+    // las demás, como públicas. Sin objetos aquí: php artisan config:cache no los puede guardar.
     'security_strategy' => [
         MiddlewareAuthSecurityStrategy::class,
-        [
-            'middleware' => ['auth:sanctum'],
-            'scheme' => SecurityScheme::http('bearer'),
-        ],
+        ['middleware' => ['auth:sanctum']],
     ],
 ];

@@ -83,6 +83,8 @@ No hay registro público: los usuarios los crea un administrador.
 - MySQL
 - Firebase Storage (imágenes)
 - Scramble (documentación OpenAPI / Swagger generada desde el código)
+- Docker + FrankenPHP y Railway (producción)
+- Resend (correo en producción)
 
 ---
 
@@ -270,9 +272,62 @@ Todas las rutas llevan el prefijo `/api`. Salvo las públicas, requieren el head
 
 ---
 
-### 🚀 Despliegue en producción
+### 🚀 Despliegue en producción (Railway)
 
-Pendiente
+La API corre en [Railway](https://railway.com) con la imagen del `Dockerfile` (PHP 8.3 + FrankenPHP) y MySQL de Railway. Son dos servicios del mismo repositorio:
+
+| Servicio | Configuración | Qué hace |
+|---|---|---|
+| `api` | `railway.json` | Atiende las peticiones. Antes de cada despliegue corre `php artisan migrate --force` y no recibe tráfico hasta que `/up` responde |
+| `scheduler` | `railway.scheduler.json` | Corre `php artisan schedule:work`: limpia los tokens vencidos y el registro de accesos antiguo |
+
+| Archivo | Para qué |
+|---|---|
+| `Dockerfile` | Imagen de producción: dependencias sin las de desarrollo, extensiones (GD con WebP, pdo_mysql, intl), `php.ini` de producción y usuario sin privilegios |
+| `docker/start.sh` | Al arrancar cachea configuración, rutas y vistas (`php artisan optimize`) y sirve `public/` en el puerto `PORT` |
+| `docker/php.ini` | OPcache, límites de subida y `expose_php=Off` |
+| `.dockerignore` | Deja fuera de la imagen `.env`, las credenciales de `storage/app/private/`, `vendor/` y las pruebas |
+| `.env.production.example` | Variables de producción para pegar en Railway |
+
+En producción las imágenes **tienen que ir a Firebase Storage** (`MEDIA_DISK=firebase`): el disco del contenedor se borra en cada despliegue. Swagger (`/docs/api`) no se publica en producción.
+
+#### Primera vez
+
+1. **Proyecto y base de datos.** En Railway: **New Project → Deploy from GitHub repo →** `sit-marketplace-api`. Renombra el servicio a `api`. Después, **New → Database → MySQL**.
+2. **Variables compartidas.** En **Project Settings → Shared Variables**, pega el contenido de `.env.production.example` (Raw Editor) y completa:
+    - `APP_KEY`: genérala una sola vez con `php artisan key:generate --show` y guárdala también en un gestor de contraseñas. **No la cambies después:** cifra los datos clínicos.
+    - `FIREBASE_CREDENTIALS_JSON`: el JSON de la cuenta de servicio en una sola línea:
+      ```bash
+      node -e "console.log(JSON.stringify(require('./storage/app/private/firebase-credentials.json')))"
+      ```
+    - `ADMIN_EMAIL` y `ADMIN_PASSWORD`: el primer administrador.
+    - `RESEND_API_KEY`: ver el paso 6.
+
+    En el servicio `api`, **Variables → Shared Variables → Add all**.
+3. **Dominio.** En `api` → **Settings → Networking → Custom Domain**: `api.tu-dominio.com`. Railway indica el registro `CNAME` que hay que crear en el DNS del dominio y emite el certificado HTTPS.
+4. **Despliegue.** Railway construye la imagen, corre las migraciones y publica. Comprueba `https://api.tu-dominio.com/up`.
+5. **Administrador y almacenamiento.** Con la [CLI de Railway](https://docs.railway.com/guides/cli):
+    ```bash
+    railway login
+    railway link            # elige el proyecto y el servicio api
+    railway ssh -- php artisan db:seed --force     # crea el administrador (sin datos demo)
+    railway ssh -- php artisan media:check         # prueba Firebase Storage
+    ```
+    Después, borra `ADMIN_PASSWORD` de las variables.
+6. **Correo.** Railway bloquea el SMTP saliente en el plan Hobby, por eso el correo sale por la API HTTPS de [Resend](https://resend.com). Crea la cuenta, agrega y verifica el dominio (registros DNS que indica Resend) y crea una API key para `RESEND_API_KEY`. `MAIL_FROM_ADDRESS` debe ser de ese dominio.
+7. **Scheduler.** **New → GitHub repo →** `sit-marketplace-api` otra vez y renómbralo `scheduler`. En **Settings → Config-as-code**, usa `railway.scheduler.json`. En **Variables → Shared Variables → Add all**. No necesita dominio.
+
+#### Cada despliegue
+
+Railway despliega solo al hacer push a la rama configurada (`main`). Las migraciones corren antes de cambiar de versión; si fallan, la versión anterior sigue atendiendo.
+
+#### Probar la imagen en local
+
+```bash
+docker build -t sit-api .
+docker run --rm -p 8080:8080 --env-file .env.docker sit-api
+```
+`.env.docker` (no se versiona) lleva las mismas variables que `.env.production.example`, con un `DB_URL` accesible desde el contenedor. Antes de la primera vez, corre las migraciones con `docker run --rm --env-file .env.docker sit-api php artisan migrate --force`.
 
 ---
 

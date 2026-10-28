@@ -100,10 +100,12 @@ class AppServiceProvider extends ServiceProvider
     private function registerFirebaseDisk(): void
     {
         Storage::extend('firebase', function (Application $app, array $config) {
-            $bucket = (new StorageClient([
-                'projectId' => $config['project_id'],
-                'keyFilePath' => $config['credentials'],
-            ]))->bucket($config['bucket']);
+            $credentials = $config['credentials_json']
+                ? ['keyFile' => json_decode($config['credentials_json'], true, flags: JSON_THROW_ON_ERROR)]
+                : ['keyFilePath' => $config['credentials']];
+
+            $bucket = (new StorageClient(['projectId' => $config['project_id'], ...$credentials]))
+                ->bucket($config['bucket']);
 
             // Firebase controla el acceso con sus reglas, no con permisos por archivo (ACL).
             $adapter = new GoogleCloudStorageAdapter($bucket, visibilityHandler: new UniformBucketLevelAccessVisibility);
